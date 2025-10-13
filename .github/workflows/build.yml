@@ -1,0 +1,27 @@
+name: Build and Deploy to Minik8
+
+on: 
+  push:
+    branches:
+      - -main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@4
+
+      - name: Build Docker image
+        uses: docker build -t my-frontend:latest .
+
+      - name: Save image as tar 
+        run: docker save my-frontend:latest -o image.tar
+
+       
+      - name: Upload Image artifact
+        uses: actions/upload-artifact@4
+        with:
+          name: my-frontend-image
+          path: image.tar
