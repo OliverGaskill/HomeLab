@@ -1,33 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-frontend
+  name: go-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: my-frontend
+      app: go-app
   template:
     metadata:
       labels:
-        app: my-frontend
+        app: go-app
     spec:
       containers:
-        - name: my-frontend
-          image: my-frontend:latest
-          imagePullPolicy: Never  # Important for local images!
-          ports:
-            - containerPort: 3000
+      - name: go-app
+        image: ghcr.io/YOUR_GITHUB_USERNAME/YOUR_REPO:latest
+        ports:
+        - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-frontend-service
+  name: go-app-service
 spec:
   type: NodePort
   selector:
-    app: my-frontend
+    app: go-app
   ports:
-    - port: 80
-      targetPort: 3000
-      nodePort: 30080
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080

@@ -1,27 +1,38 @@
-name: Build and Deploy to Minik8
+name: Build and Deploy to Local Minikube
 
-on: 
+on:
   push:
-    branches:
-      - -main
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
-        uses: docker build -t my-frontend:latest .
+        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
 
-      - name: Save image as tar 
-        run: docker save my-frontend:latest -o image.tar
+      - name: Push Docker image
+        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-       
-      - name: Upload Image artifact
-        uses: actions/upload-artifact@4
+      - name: Copy manifests to Fedora and deploy
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          name: my-frontend-image
-          path: image.tar
+          host: ${{ secrets.MINIKUBE_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Loading latest image into Minikube..."
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            minikube image load ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            kubectl apply -f ~/repo/k8s/ || true
