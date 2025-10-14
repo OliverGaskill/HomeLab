@@ -1,4 +1,4 @@
-name: Build Docker Image Locally
+name: Build Docker Image Artifact
 
 on:
   push:
@@ -19,7 +19,10 @@ jobs:
           docker build -t $IMAGE_NAME .
 
       - name: Save Docker image as artifact
+        run: |
+          docker save homelab:latest -o image.tar
+      - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: ./image.tar
+          path: image.tar
