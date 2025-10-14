@@ -1,37 +1,25 @@
-name: Build and Deploy to Local Minikube
+name: Build Docker Image Locally
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: olivergaskill/homelab
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-
       - name: Build Docker image
-        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+        run: |
+          IMAGE_NAME=homelab:latest
+          echo "Building Docker image $IMAGE_NAME"
+          docker build -t $IMAGE_NAME .
 
-      - name: Push Docker image
-        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-      - name: Copy manifests to Fedora and deploy
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Save Docker image as artifact
+        uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.MINIKUBE_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "Loading latest image into Minikube..."
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            minikube image load ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            kubectl apply -f ~/repo/k8s/ || true
+          name: docker-image
+          path: ./image.tar
