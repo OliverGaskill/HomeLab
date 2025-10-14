@@ -1,5 +1,5 @@
 # Minimal Dockerfile for local builds
-FROM golang:1.22
+FROM golang:1.24.8
 
 WORKDIR /app
 COPY . .
